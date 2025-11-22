@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dezimalbrüche visualisieren</title>
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --card: #ffffff;
+      --text: #0f172a;
+      --muted: #64748b;
+      --accent: #38bdf8;
+      --ring: rgba(56, 189, 248, 0.2);
+      --shadow: 0 20px 50px rgba(15, 23, 42, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+      font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: radial-gradient(circle at 20% 20%, rgba(56, 189, 248, 0.12), transparent 45%),
+        radial-gradient(circle at 80% 0%, rgba(99, 102, 241, 0.08), transparent 40%),
+        var(--bg);
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 32px;
+    }
+
+    main {
+      background: var(--card);
+      border-radius: 28px;
+      box-shadow: var(--shadow);
+      max-width: 900px;
+      width: 100%;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 32px;
+      padding: 36px;
+      border: 1px solid rgba(15, 23, 42, 0.05);
+    }
+
+    header h1 {
+      margin: 0 0 8px;
+      font-size: 28px;
+      letter-spacing: -0.02em;
+    }
+
+    header p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .controls {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    label {
+      font-weight: 600;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      color: var(--text);
+    }
+
+    input {
+      padding: 14px 16px;
+      border-radius: 14px;
+      border: 1px solid rgba(99, 102, 241, 0.15);
+      background: #f8fafc;
+      color: var(--text);
+      font-size: 16px;
+      outline: none;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+    }
+
+    input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 4px var(--ring);
+      background: #fff;
+    }
+
+    .hint {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .circle-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .circle {
+      --angle: 180deg;
+      --fill: var(--accent);
+      --empty: #ffffff;
+      width: min(320px, 70vw);
+      height: min(320px, 70vw);
+      border-radius: 50%;
+      background: conic-gradient(var(--fill) 0deg var(--angle), var(--empty) var(--angle) 360deg);
+      box-shadow: inset 0 0 0 16px rgba(255, 255, 255, 0.8), var(--shadow);
+      display: grid;
+      place-items: center;
+      transition: background 0.25s ease;
+    }
+
+    .value {
+      font-size: 40px;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.03em;
+    }
+
+    .status {
+      color: #dc2626;
+      font-size: 14px;
+      min-height: 20px;
+    }
+
+    @media (max-width: 600px) {
+      main {
+        padding: 28px;
+      }
+
+      header h1 {
+        font-size: 24px;
+      }
+
+      .value {
+        font-size: 32px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="controls">
+      <header>
+        <h1>Dezimalbrüche auf einen Blick</h1>
+        <p>Gib einen Dezimalbruch zwischen 0 und 1 ein. Wir füllen den Kreis im Verhältnis zum eingegebenen Wert – eine schnelle, klare Übersicht für Kinder.</p>
+      </header>
+
+      <label>
+        Dezimalbruch eingeben
+        <input id="fraction" type="text" inputmode="decimal" aria-describedby="hint"
+          placeholder="z. B. 0,5" autocomplete="off" />
+      </label>
+      <p id="hint" class="hint">Akzeptiert Punkt oder Komma. Werte außerhalb 0–1 werden automatisch begrenzt.</p>
+      <div class="status" role="status" aria-live="polite"></div>
+    </section>
+
+    <section class="circle-wrap">
+      <div class="circle" aria-hidden="true">
+        <div class="value" id="value-display">0,50</div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const input = document.getElementById("fraction");
+    const circle = document.querySelector(".circle");
+    const valueDisplay = document.getElementById("value-display");
+    const status = document.querySelector(".status");
+
+    function formatDisplay(value) {
+      return value.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function clampDecimal(value) {
+      if (Number.isNaN(value)) return 0;
+      return Math.min(1, Math.max(0, value));
+    }
+
+    function updateVisualization(raw) {
+      const normalized = raw.replace(",", ".");
+      const parsed = clampDecimal(parseFloat(normalized));
+      const angle = parsed * 360;
+
+      circle.style.setProperty("--angle", `${angle}deg`);
+      valueDisplay.textContent = formatDisplay(parsed);
+
+      if (Number.isNaN(parseFloat(normalized))) {
+        status.textContent = "Bitte eine Zahl eingeben (z. B. 0,25).";
+      } else if (parsed !== parseFloat(normalized)) {
+        status.textContent = "Wert wurde auf den Bereich 0–1 begrenzt.";
+      } else {
+        status.textContent = "";
+      }
+    }
+
+    input.addEventListener("input", (event) => {
+      updateVisualization(event.target.value.trim());
+    });
+
+    // Initial state
+    input.value = "0,5";
+    updateVisualization(input.value);
+  </script>
+</body>
+</html>
